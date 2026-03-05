@@ -1056,6 +1056,8 @@ const translations = {
     fontSizePreview: "Vista previa del texto",
     darkModeEnabled: "Tema oscuro activado",
     lightModeEnabled: "Tema claro activado",
+    // Sprint 2 - Currency
+    currencyTitle: "Moneda",
 
     // Sprint 2 - Analytics Tabs
     summary: "Resumen",
@@ -2108,6 +2110,8 @@ const translations = {
     fontSizePreview: "Text preview",
     darkModeEnabled: "Dark mode enabled",
     lightModeEnabled: "Light mode enabled",
+    // Sprint 2 - Currency
+    currencyTitle: "Currency",
 
     // Sprint 2 - Analytics Tabs
     summary: "Summary",

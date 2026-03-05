@@ -22,6 +22,7 @@ import Animated, {
 import { LinearGradient } from 'expo-linear-gradient';
 import useAuth from '../../hooks/useAuth';
 import { useTheme } from '../../hooks/useTheme';
+import { CURRENCIES } from '../../context/ThemeProvider';
 import { t } from '../../utils/i18n';
 
 const { width } = Dimensions.get('window');
@@ -289,7 +290,7 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
 
 const SettingsScreen = ({ navigation }) => {
   const { user, userData, updateUserData, updateUserSettings } = useAuth();
-  const { colors, spacing, fontSize, borderRadius, shadows, fontScale, setFontScale, isDarkMode, toggleTheme } = useTheme();
+  const { colors, spacing, fontSize, borderRadius, shadows, fontScale, setFontScale, isDarkMode, toggleTheme, currency, setCurrency } = useTheme();
   const styles = useMemo(() => createStyles(colors, spacing, fontSize, borderRadius, shadows), [colors, spacing, fontSize, borderRadius, shadows]);
   const [displayName, setDisplayName] = useState(userData?.displayName || '');
   const [isEditing, setIsEditing] = useState(false);
@@ -500,6 +501,54 @@ const SettingsScreen = ({ navigation }) => {
         }}>
           {t('fontSizePreview')}
         </Text>
+      </LinearGradient>
+    </Animated.View>
+  );
+
+  const renderCurrencySection = () => (
+    <Animated.View
+      entering={FadeInDown.duration(800).delay(350)}
+      style={styles.section}
+    >
+      <Text style={styles.sectionTitle}>{t('currencyTitle')}</Text>
+      <LinearGradient
+        colors={[colors.surface, colors.background]}
+        style={[styles.profileCard, { paddingVertical: spacing.md }]}
+      >
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          {CURRENCIES.map((cur) => (
+            <TouchableOpacity
+              key={cur.code}
+              onPress={() => setCurrency(cur.code)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                paddingHorizontal: spacing.md,
+                paddingVertical: spacing.sm,
+                borderRadius: 12,
+                backgroundColor: currency === cur.code ? colors.primary : colors.surface,
+                borderWidth: currency === cur.code ? 0 : 1,
+                borderColor: colors.border,
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 18 }}>{cur.flag}</Text>
+              <Text style={{
+                fontSize: fontSize.sm,
+                fontWeight: currency === cur.code ? '700' : '500',
+                color: currency === cur.code ? '#fff' : colors.text,
+              }}>
+                {cur.code}
+              </Text>
+              <Text style={{
+                fontSize: fontSize.xs,
+                color: currency === cur.code ? 'rgba(255,255,255,0.8)' : colors.textSecondary,
+              }}>
+                {cur.symbol}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </LinearGradient>
     </Animated.View>
   );
@@ -734,6 +783,7 @@ const SettingsScreen = ({ navigation }) => {
       >
         {renderProfileSection()}
         {renderFontScaleSection()}
+        {renderCurrencySection()}
         {renderSettingsSection()}
         {renderDataSection()}
         {renderAboutSection()}

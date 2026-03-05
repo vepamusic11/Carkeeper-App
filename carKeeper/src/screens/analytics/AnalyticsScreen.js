@@ -16,6 +16,7 @@ import useGastos from '../../hooks/useGastos';
 import useVehiculos from '../../hooks/useVehiculos';
 import useMantenimientos from '../../hooks/useMantenimientos';
 import { useTheme } from '../../hooks/useTheme';
+import { CURRENCIES } from '../../context/ThemeProvider';
 import { t } from '../../utils/i18n';
 
 const createStyles = (colors, spacing, fontSize, borderRadius, shadows, width) => StyleSheet.create({
@@ -175,7 +176,6 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows, width) =
     color: colors.textSecondary
   },
   chartContainer: {
-    marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
   maintenanceKpi: {
@@ -230,7 +230,7 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows, width) =
 });
 
 const AnalyticsScreen = ({ navigation }) => {
-  const { colors, spacing, fontSize, borderRadius, shadows } = useTheme();
+  const { colors, spacing, fontSize, borderRadius, shadows, currency } = useTheme();
   const { width } = useWindowDimensions();
 
   const { gastos, summary, loadAllGastos, loadSummary } = useGastos();
@@ -394,8 +394,13 @@ const AnalyticsScreen = ({ navigation }) => {
     setRefreshing(false);
   };
 
+  const currencySymbol = useMemo(() => {
+    const cur = CURRENCIES.find(c => c.code === currency);
+    return cur ? cur.symbol : '$';
+  }, [currency]);
+
   const formatCurrency = (amount) => {
-    return `$${amount.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+    return `${currencySymbol}${amount.toLocaleString('es-ES', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const renderKPICard = (title, value, subtitle, icon, color = colors.primary, trend = null) => (
@@ -570,7 +575,7 @@ const AnalyticsScreen = ({ navigation }) => {
 
                 {analytics.costPerKm > 0 && renderKPICard(
                   t('costPerKm'),
-                  `$${analytics.costPerKm.toFixed(2)}`,
+                  `${currencySymbol}${analytics.costPerKm.toFixed(2)}`,
                   t('includesAllExpenses'),
                   'car',
                   colors.warning
@@ -679,7 +684,7 @@ const AnalyticsScreen = ({ navigation }) => {
           <>
             <View style={styles.maintenanceKpi}>
               <View style={styles.maintenanceKpiCard}>
-                <Text style={styles.maintenanceKpiValue}>${maintenanceStats.totalCost.toLocaleString()}</Text>
+                <Text style={styles.maintenanceKpiValue}>{currencySymbol}{maintenanceStats.totalCost.toLocaleString()}</Text>
                 <Text style={styles.maintenanceKpiLabel}>{t('totalCost')}</Text>
               </View>
               <View style={styles.maintenanceKpiCard}>

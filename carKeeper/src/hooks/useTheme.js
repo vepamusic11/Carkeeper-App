@@ -36,7 +36,7 @@ const FONT_SCALE_MULTIPLIERS = {
 };
 
 export const useTheme = () => {
-  const { isDarkMode, toggleTheme, fontScale, setFontScale } = useThemeContext();
+  const { isDarkMode, toggleTheme, fontScale, setFontScale, currency, setCurrency } = useThemeContext();
 
   const colors = isDarkMode ? darkColors : lightColors;
 
@@ -97,6 +97,8 @@ export const useTheme = () => {
     borderRadius,
     shadows: adaptedShadows,
     fontScale,
-    setFontScale
+    setFontScale,
+    currency,
+    setCurrency
   };
 };
