@@ -1,4 +1,4 @@
-import clienteAxios from './clinteAxios';
+import clienteAxios from '../configs/clinteAxios.jsx';
 
 export const gastosRecurrentesService = {
   getAll: async () => {

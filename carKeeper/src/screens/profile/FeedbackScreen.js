@@ -18,7 +18,7 @@ import Animated, { FadeInDown, SlideInRight } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../hooks/useTheme';
 import { t } from '../../utils/i18n';
-import clienteAxios from '../../services/clinteAxios';
+import clienteAxios from '../../configs/clinteAxios.jsx';
 
 const feedbackTypes = [
   { key: 'suggestion', icon: 'bulb', color: '#f59e0b' },
