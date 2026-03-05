@@ -100,16 +100,19 @@ const registrar = async (req, res) => {
 		if (existeUsuario) {
 			return res
 				.status(400)
-				.json({ es: "Usuario ya registrado", en: "User already registered" });
+				.json({ msg: "Usuario ya registrado" });
 		}
 
-		// Creamos el nuevo usuario, asignando también subscriptionData
+		// Creamos el nuevo usuario con campos específicos (no spread de req.body)
 		const usuario = new Usuario({
-			...req.body,
-			subscriptionData: subscriptionData || {}, // si no se envía, lo asignamos a un objeto vacío
+			nombre: req.body.nombre,
+			apellido: req.body.apellido,
+			email,
+			password: req.body.password,
+			lengua,
+			subscriptionData: subscriptionData || {},
 		});
 
-		usuario.lengua = lengua;
 		const usuarioAlmacenado = await usuario.save();
 		// Generar JWT con el ID del usuario guardado
 		usuarioAlmacenado.token = generarJWT(usuarioAlmacenado._id);
@@ -124,57 +127,63 @@ const registrar = async (req, res) => {
 
 		res.json({
 			...usuarioAlmacenado.toObject(),
-			isNewUser: true, // This is always a new registration
+			isNewUser: true,
 		});
 	} catch (error) {
-		console.error(error);
+		console.error("Error registrando usuario:", error.message);
 		res.status(500).json({
-			es: "Error al registrar el usuario",
-			en: "Error registering user",
+			msg: "Error al registrar el usuario",
 		});
 	}
 };
 
 const registrarGoogle = async (req, res) => {
 	try {
-		let { email, subscriptionData, lengua } = req.body; // extraemos subscriptionData
-		console.log(req.body);
-		email = email.toLowerCase();
+		let { email, subscriptionData, lengua } = req.body;
+		email = email.toLowerCase().trim();
 
 		const existeUsuario = await Usuario.findOne({ email });
 		if (existeUsuario) {
 			return res
 				.status(400)
-				.json({ es: "Usuario ya registrado", en: "User already registered" });
+				.json({ msg: "Usuario ya registrado" });
 		}
 
 		const usuario = new Usuario({
-			...req.body,
+			nombre: req.body.nombre || email.split("@")[0],
+			apellido: req.body.apellido || "",
+			email,
+			provider: "google",
+			providerId: req.body.sub || req.body.providerId,
+			profileImage: req.body.picture || req.body.profileImage,
+			lengua,
+			confirmado: true,
 			subscriptionData: subscriptionData || {},
 		});
-		usuario.lengua = lengua;
-		usuario.provider = "google";
+
 		const usuarioAlmacenado = await usuario.save();
-		// Generar JWT con el ID del usuario guardado
 		usuarioAlmacenado.token = generarJWT(usuarioAlmacenado._id);
 		await usuarioAlmacenado.save();
 
 		// Enviar email de confirmación
-		emailRegistro({
-			email: usuario.email,
-			nombre: usuario.nombre,
-			lang: lengua,
-		});
+		try {
+			emailRegistro({
+				email: usuario.email,
+				nombre: usuario.nombre,
+				lang: lengua,
+			});
+		} catch (emailError) {
+			console.error("Error enviando email de bienvenida:", emailError.message);
+		}
 
 		return res.json({
 			...usuarioAlmacenado.toObject(),
-			isNewUser: true, // This is always a new registration
+			isNewUser: true,
 		});
 	} catch (error) {
-		console.error(error);
+		console.error("Error registrando con Google:", error.message);
 		return res.status(500).json({
-			es: "Error al registrar el usuario",
-			en: "Error registering user",
+			msg: "Error al registrar el usuario",
 		});
 	}
 };
@@ -196,8 +205,7 @@ const appleAuth = async (req, res) => {
 		const { identityToken, providerId, subscriptionData, lengua } = req.body;
 		if (!identityToken || !providerId) {
 			return res.status(400).json({
-				es: "Faltan datos de autorización",
-				en: "Missing authorization data",
+				msg: "Faltan datos de autorización",
 			});
 		}
 
@@ -288,10 +296,9 @@ const appleAuth = async (req, res) => {
 			isNewUser: wasCreated, // Indicate if this was a new registration
 		});
 	} catch (error) {
-		console.error("appleAuth error:", error);
+		console.error("appleAuth error:", error.message);
 		return res.status(500).json({
-			es: "Error autenticando con Apple",
-			en: "Error authenticating with Apple",
+			msg: "Error autenticando con Apple",
 		});
 	}
 };
@@ -342,26 +349,23 @@ const registrarSocial = async (req, res) => {
 const autenticar = async (req, res) => {
 	try {
 		const { email, password } = req.body;
-		const emailRegex = new RegExp(`^${email}$`, "i");
-		let usuario = await Usuario.findOne({ email: emailRegex });
-
-		console.log(req.body);
+		// Búsqueda case-insensitive segura (sin RegExp para evitar inyección)
+		let usuario = await Usuario.findOne({ email: email.toLowerCase().trim() });
 
 		if (!usuario) {
-			const usernameRegex = new RegExp(`^${email}$`, "i");
-			usuario = await Usuario.findOne({ nombreUsuario: usernameRegex });
+			// Intentar buscar por nombre de usuario
+			usuario = await Usuario.findOne({ nombreUsuario: { $regex: `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } });
 		}
 
 		if (!usuario) {
 			return res
 				.status(404)
-				.json({ es: "El usuario no existe", en: "User not found" });
+				.json({ msg: "El usuario no existe" });
 		}
 
 		if (usuario.provider !== "local" || !usuario.password) {
 			return res.status(403).json({
-				es: "Este usuario se registró con Google, Apple u otro proveedor externo. Inicie sesión desde ese método.",
-				en: "This user signed up with Google, Apple or another external provider. Please sign in using that method.",
+				msg: "Este usuario se registró con Google, Apple u otro proveedor externo. Inicie sesión desde ese método.",
 				code: "external_provider",
 			});
 		}
@@ -370,7 +374,7 @@ const autenticar = async (req, res) => {
 		if (!isMatch) {
 			return res
 				.status(403)
-				.json({ es: "Password incorrecto", en: "Incorrect password" });
+				.json({ msg: "Password incorrecto" });
 		}
 
 		const token = generarJWT(usuario._id);
@@ -388,22 +392,22 @@ const autenticar = async (req, res) => {
 			isNewUser: false, // This is a login, not a new registration
 		});
 	} catch (error) {
-		console.error(error);
+		console.error("Error en autenticación:", error.message);
 		res
 			.status(500)
-			.json({ es: "Error en la autenticación", en: "Authentication error" });
+			.json({ msg: "Error en la autenticación" });
 	}
 };
 
 const autenticarGoogle = async (req, res) => {
 	try {
 		const { email, sub } = req.body;
-		let usuario = await Usuario.findOne({ email });
+		let usuario = await Usuario.findOne({ email: email.toLowerCase().trim() });
 
 		if (!usuario) {
 			return res
 				.status(404)
-				.json({ es: "El usuario no existe", en: "User not found" });
+				.json({ msg: "El usuario no existe" });
 		}
 
 		const token = generarJWT(usuario._id);
@@ -421,10 +425,10 @@ const autenticarGoogle = async (req, res) => {
 			isNewUser: false, // This is a login, not a new registration
 		});
 	} catch (error) {
-		console.error(error);
+		console.error("Error en autenticación Google:", error.message);
 		res
 			.status(500)
-			.json({ es: "Error en la autenticación", en: "Authentication error" });
+			.json({ msg: "Error en la autenticación" });
 	}
 };
 

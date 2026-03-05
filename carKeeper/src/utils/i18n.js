@@ -889,6 +889,7 @@ const translations = {
     welcomeBenefit2: "Recordatorios inteligentes personalizados",
     welcomeBenefit3: "Documentos y facturas organizados",
     continueWithApple: "Continuar con Apple",
+    continueWithGoogle: "Continuar con Google",
     continueWithEmail: "Continuar con Email",
     welcomeSecurityText: "Tus datos están seguros y protegidos",
 
@@ -1942,6 +1943,7 @@ const translations = {
     welcomeBenefit2: "Personalized smart reminders",
     welcomeBenefit3: "Organized documents and invoices",
     continueWithApple: "Continue with Apple",
+    continueWithGoogle: "Continue with Google",
     continueWithEmail: "Continue with Email",
     welcomeSecurityText: "Your data is safe and protected",
 

@@ -30,8 +30,9 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
-  const { login, loading } = useAuth();
+  const { login, loginWithGoogle, loading } = useAuth();
   const { colors } = useTheme();
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   // Animaciones
   const fadeAnim = useRef(new RNAnimated.Value(0)).current;
@@ -74,10 +75,29 @@ const LoginScreen = ({ navigation }) => {
 
     const result = await login(sanitizeText(email), password);
     if (result.error) {
-      Alert.alert(t('error'), result.error);
+      const errorMsg = typeof result.error === 'object'
+        ? (result.error.msg || result.error.es || JSON.stringify(result.error))
+        : result.error;
+      Alert.alert(t('error'), errorMsg);
     }
   };
 
+  const handleGoogleLogin = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    try {
+      const result = await loginWithGoogle();
+      if (!result.success) {
+        if (result.error && !result.error.includes('cancelado') && !result.error.includes('cancel')) {
+          Alert.alert(t('error'), result.error);
+        }
+        setGoogleLoading(false);
+      }
+    } catch (error) {
+      Alert.alert(t('error'), error.message);
+      setGoogleLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -231,6 +251,26 @@ const LoginScreen = ({ navigation }) => {
                   </>
                 )}
               </LinearGradient>
+            </TouchableOpacity>
+
+            {/* Separador */}
+            <View style={styles.separator}>
+              <View style={styles.separatorLine} />
+              <Text style={styles.separatorText}>o</Text>
+              <View style={styles.separatorLine} />
+            </View>
+
+            {/* Google Login */}
+            <TouchableOpacity
+              style={[styles.googleButton, googleLoading && styles.loginButtonDisabled]}
+              onPress={handleGoogleLogin}
+              disabled={googleLoading}
+              activeOpacity={0.9}
+            >
+              <Ionicons name="logo-google" size={20} color="#DB4437" />
+              <Text style={styles.googleButtonText}>
+                {googleLoading ? t('loading') : t('continueWithGoogle')}
+              </Text>
             </TouchableOpacity>
 
             {/* Link para registrarse */}
@@ -410,6 +450,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: 'white',
     marginRight: 8,
+  },
+  separator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  separatorLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#ddd',
+  },
+  separatorText: {
+    color: '#999',
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginLeft: 12,
   },
   registerContainer: {
     flexDirection: 'row',

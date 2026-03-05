@@ -27,8 +27,9 @@ const videoSource = require('../../../assets/fondo.mp4');
 
 const WelcomeScreen = ({ navigation }) => {
   const { colors, spacing, fontSize, borderRadius } = useTheme();
-  const { handleAppleAuth, loginApple } = useAuth();
+  const { handleAppleAuth, loginApple, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
   const player = useVideoPlayer(videoSource, player => {
     player.loop = true;
@@ -177,6 +178,23 @@ const WelcomeScreen = ({ navigation }) => {
         [{ text: t('ok') }]
       );
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (googleLoading) return;
+    setGoogleLoading(true);
+    try {
+      const result = await loginWithGoogle();
+      if (!result.success) {
+        if (result.error && !result.error.includes('cancelado') && !result.error.includes('cancel')) {
+          Alert.alert(t('error'), result.error);
+        }
+        setGoogleLoading(false);
+      }
+    } catch (error) {
+      Alert.alert(t('error'), error.message || t('authError'));
+      setGoogleLoading(false);
     }
   };
 
@@ -354,6 +372,23 @@ const WelcomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
 
+          {/* Google Sign In Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
+            onPress={handleGoogleSignIn}
+            activeOpacity={0.9}
+            disabled={googleLoading}
+          >
+            {googleLoading ? (
+              <ActivityIndicator size="small" color="#333" />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={20} color="#DB4437" />
+                <Text style={styles.googleButtonText}>{t('continueWithGoogle')}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
           {/* Email/Password Button */}
           <TouchableOpacity
             style={[styles.emailButton, { borderColor: 'rgba(255, 255, 255, 0.4)' }]}
@@ -522,6 +557,27 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  googleButton: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  googleButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
   },
   emailButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
