@@ -1,0 +1,12 @@
+import { useContext } from 'react';
+import NotificationsContext from '../context/NotificationsProvider';
+
+const useNotifications = () => {
+  const context = useContext(NotificationsContext);
+  if (!context) {
+    throw new Error('useNotifications debe ser usado dentro de NotificationsProvider');
+  }
+  return context;
+};
+
+export default useNotifications;

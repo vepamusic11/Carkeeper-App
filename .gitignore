@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+
+# Environment variables (SECRETS)
+.env
+.env.*
+!.env.example
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+android/
+ios/
+*.ipa
+*.apk
+*.aab
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+*.pem
+.kotlin/
+*.orig.*
+
+# Firebase / Google services (contain API keys)
+google-services.json
+GoogleService-Info.plist
+
+# Metro
+.metro-health-check*
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+__MACOSX/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+
+# Uploads (user data)
+backend/uploads/
+
+# TypeScript
+*.tsbuildinfo
+
+# Claude internal
+.claude/
+
+# EAS (may contain secrets)
+carKeeper/eas.json
+
+# Logs
+*.log
+
+# Debug/temp files
+backend/debug_*.js
+
+# Uploaded images in backend root (temp)
+backend/*.jpg
+backend/*.png
+!backend/logo.png
+
+# Misc
+package-lock.json

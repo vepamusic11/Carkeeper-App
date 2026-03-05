@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "CarKeeper",
+    "slug": "CarKeeper",
+    "version": "1.0.3",
+    "orientation": "portrait",
+    "icon": "./assets/splash.png",
+    "userInterfaceStyle": "light",
+    "scheme": "com.deepyze.carkeeper",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "bundleIdentifier": "com.deepyze.carkeeper",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/splash.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.deepyze.carkeeper",
+      "permissions": [
+        "CAMERA",
+        "NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-apple-authentication",
+      "expo-localization",
+      "expo-mail-composer",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/splash.png",
+          "color": "#667eea"
+        }
+      ],
+      "expo-font",
+      "expo-video"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "59318700-6a28-4a12-b984-70ff53a686f7"
+      }
+    },
+    "owner": "dami0089"
+  }
+}
