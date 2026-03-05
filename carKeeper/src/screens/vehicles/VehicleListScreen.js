@@ -41,6 +41,7 @@ import useGastos from '../../hooks/useGastos';
 import Button from '../../components/Button';
 import PromoBanner from '../../components/PromoBanner';
 import { useTheme } from '../../hooks/useTheme';
+import { CURRENCIES } from '../../context/ThemeProvider';
 import { t } from '../../utils/i18n';
 import { getImageUrl } from '../../utils/imageUtils';
 
@@ -76,12 +77,12 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     alignItems: 'center'
   },
   headerGreeting: {
-    fontSize: 16,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: 4
+    marginBottom: 2,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#fff'
   },
@@ -448,31 +449,30 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
   // Quick Stats Styles
   quickStatsContainer: {
     marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    marginBottom: spacing.lg
+    marginBottom: spacing.md,
   },
   quickStatsGrid: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    padding: spacing.md,
+    borderRadius: 12,
+    padding: spacing.sm,
     ...shadows.sm
   },
   quickStatItem: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.xs,
   },
   quickStatIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: borderRadius.md,
+    width: 32,
+    height: 32,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs
+    marginBottom: 4,
   },
   quickStatNumber: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: '700',
     color: colors.text,
     marginBottom: 2
@@ -481,6 +481,73 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     fontSize: fontSize.xs,
     color: colors.textSecondary,
     textAlign: 'center'
+  },
+
+  // Metrics Section
+  metricsContainer: {
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  metricsTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.sm,
+  },
+  metricsPeriodRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.surface,
+    borderRadius: 10,
+    padding: 3,
+    marginBottom: spacing.sm,
+  },
+  metricsPeriodBtn: {
+    flex: 1,
+    paddingVertical: 6,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  metricsPeriodBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  metricsPeriodText: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  metricsPeriodTextActive: {
+    color: '#fff',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metricsCard: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.sm,
+    alignItems: 'center',
+    ...shadows.sm,
+  },
+  metricsCardIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  metricsCardValue: {
+    fontSize: fontSize.base,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  metricsCardLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
 
   // PRO Badge
@@ -503,13 +570,14 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
 });
 
 const VehicleListScreen = ({ navigation, route }) => {
-  const { vehiculos, loading, deleteVehiculo, canAddVehicle, vehicleLimit } = useVehiculos();
-  const { mantenimientos, getNextMaintenance } = useMantenimientos();
-  const { gastos } = useGastos();
+  const { vehiculos, loading, deleteVehiculo, canAddVehicle, vehicleLimit, loadVehiculos } = useVehiculos();
+  const { mantenimientos, getNextMaintenance, refreshData: refreshMantenimientos } = useMantenimientos();
+  const { gastos, refreshData: refreshGastos } = useGastos();
   const { isPremium, user } = useAuth();
   const { isPro, isFree, subscriptionType, refreshData } = useSubscription();
-  const { colors, spacing, fontSize, borderRadius, shadows } = useTheme();
+  const { colors, spacing, fontSize, borderRadius, shadows, currency } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
+  const [metricsPeriod, setMetricsPeriod] = useState('month');
   const [imageErrors, setImageErrors] = useState(new Set());
   const [showPromoBanner, setShowPromoBanner] = useState(true);
   const scrollY = useRef(new RNAnimated.Value(0)).current;
@@ -528,41 +596,37 @@ const VehicleListScreen = ({ navigation, route }) => {
   const buttonScale = useSharedValue(1);
   const buttonRotation = useSharedValue(0);
 
-  // Verificar suscripción con cooldown para evitar spam a RevenueCat
+  // Refrescar datos al volver a la pantalla
   useFocusEffect(
     React.useCallback(() => {
-      const verifySubscription = async () => {
-        // Si viene de una compra exitosa, resetear cooldown
+      const refreshAllData = async () => {
         const forceRefresh = route?.params?.forceRefresh;
-
-        // Verificar cooldown (skip si viene de compra)
         const now = Date.now();
+
         if (!forceRefresh && now - lastRefreshTime.current < REFRESH_COOLDOWN) {
           return;
         }
-
         lastRefreshTime.current = now;
 
-        // Refrescar información de suscripción desde RevenueCat
+        // Refrescar toda la data en paralelo
+        const promises = [];
         if (refreshData && typeof refreshData === 'function') {
-          try {
-            await refreshData();
-          } catch (error) {
-            console.error('Error al refrescar suscripción:', error);
-          }
+          promises.push(refreshData().catch(() => {}));
         }
+        promises.push(loadVehiculos().catch(() => {}));
+        promises.push(refreshGastos().catch(() => {}));
+        promises.push(refreshMantenimientos().catch(() => {}));
+        await Promise.all(promises);
 
-        // Limpiar el parámetro para evitar múltiples refreshes
         if (forceRefresh) {
           navigation.setParams({ forceRefresh: undefined });
         }
       };
 
-      // Solo verificar si el usuario está logueado
       if (user && user._id) {
-        verifySubscription();
+        refreshAllData();
       }
-    }, [route?.params?.forceRefresh]) // Solo re-ejecutar si cambia forceRefresh
+    }, [route?.params?.forceRefresh])
   );
 
   React.useEffect(() => {
@@ -890,6 +954,88 @@ const VehicleListScreen = ({ navigation, route }) => {
     return map;
   }, [vehiculos, mantenimientos, gastos, getNextMaintenance]);
 
+  const currencySymbol = useMemo(() => {
+    const cur = CURRENCIES.find(c => c.code === currency);
+    return cur ? cur.symbol : '$';
+  }, [currency]);
+
+  const periodMetrics = useMemo(() => {
+    const now = new Date();
+    let startDate;
+    if (metricsPeriod === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else {
+      startDate = new Date(now.getFullYear(), 0, 1);
+    }
+
+    const periodGastos = gastos.filter(g => {
+      const d = g.date?.toDate ? g.date.toDate() : new Date(g.date);
+      return d >= startDate;
+    });
+    const periodMantenimientos = mantenimientos.filter(m => {
+      const d = new Date(m.date);
+      return d >= startDate;
+    });
+
+    const totalExpenses = periodGastos.reduce((sum, g) => sum + (g.amount || 0), 0);
+    const totalMaintenance = periodMantenimientos.reduce((sum, m) => sum + (m.cost || 0), 0);
+    const fuelExpenses = periodGastos.filter(g => g.category === 'combustible').reduce((sum, g) => sum + (g.amount || 0), 0);
+    const txCount = periodGastos.length + periodMantenimientos.length;
+
+    return { totalExpenses, totalMaintenance, fuelExpenses, txCount };
+  }, [gastos, mantenimientos, metricsPeriod]);
+
+  const renderMetrics = () => (
+    <View style={styles.metricsContainer}>
+      <Text style={styles.metricsTitle}>{t('keyMetrics')}</Text>
+      <View style={styles.metricsPeriodRow}>
+        {[
+          { key: 'month', label: t('month') },
+          { key: 'year', label: t('year') }
+        ].map(p => (
+          <TouchableOpacity
+            key={p.key}
+            style={[styles.metricsPeriodBtn, metricsPeriod === p.key && styles.metricsPeriodBtnActive]}
+            onPress={() => setMetricsPeriod(p.key)}
+          >
+            <Text style={[styles.metricsPeriodText, metricsPeriod === p.key && styles.metricsPeriodTextActive]}>
+              {p.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={styles.metricsGrid}>
+        <View style={styles.metricsCard}>
+          <View style={[styles.metricsCardIcon, { backgroundColor: colors.primary + '20' }]}>
+            <Ionicons name="wallet" size={16} color={colors.primary} />
+          </View>
+          <Text style={styles.metricsCardValue} numberOfLines={1}>
+            {currencySymbol}{periodMetrics.totalExpenses.toLocaleString()}
+          </Text>
+          <Text style={styles.metricsCardLabel}>{t('expenses')}</Text>
+        </View>
+        <View style={styles.metricsCard}>
+          <View style={[styles.metricsCardIcon, { backgroundColor: colors.warning + '20' }]}>
+            <Ionicons name="build" size={16} color={colors.warning} />
+          </View>
+          <Text style={styles.metricsCardValue} numberOfLines={1}>
+            {currencySymbol}{periodMetrics.totalMaintenance.toLocaleString()}
+          </Text>
+          <Text style={styles.metricsCardLabel}>{t('maintenance')}</Text>
+        </View>
+        <View style={styles.metricsCard}>
+          <View style={[styles.metricsCardIcon, { backgroundColor: '#FF6B6B20' }]}>
+            <Ionicons name="car" size={16} color="#FF6B6B" />
+          </View>
+          <Text style={styles.metricsCardValue} numberOfLines={1}>
+            {currencySymbol}{periodMetrics.fuelExpenses.toLocaleString()}
+          </Text>
+          <Text style={styles.metricsCardLabel}>{t('fuel')}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
   const renderVehicle = useCallback(({ item, index }) => {
     const stats = vehicleStatsMap[item._id] || { totalExpenses: 0, pendingMaintenances: 0, nextMaintenance: null };
 
@@ -955,7 +1101,7 @@ const VehicleListScreen = ({ navigation, route }) => {
                   </View>
                   <View style={styles.statInfo}>
                     <Text style={styles.statValueSmall} numberOfLines={1}>
-                      ${stats.totalExpenses.toLocaleString()}
+                      {currencySymbol}{stats.totalExpenses.toLocaleString()}
                     </Text>
                     <Text style={styles.statLabelSmall}>{t('spent')}</Text>
                   </View>
@@ -994,8 +1140,6 @@ const VehicleListScreen = ({ navigation, route }) => {
 
   const renderListHeader = useCallback(() => (
     <>
-      {/* {renderStats()} */}
-
       {isFree && showPromoBanner && (
         <PromoBanner
           type="premium"
@@ -1005,6 +1149,11 @@ const VehicleListScreen = ({ navigation, route }) => {
         />
       )}
 
+      {/* Period Metrics */}
+      <Animated.View entering={FadeInUp.delay(200)} style={{ marginTop: spacing.md }}>
+        {renderMetrics()}
+      </Animated.View>
+
       {/* Quick Stats Summary */}
       <Animated.View
         entering={FadeInUp.delay(400)}
@@ -1012,13 +1161,13 @@ const VehicleListScreen = ({ navigation, route }) => {
       >
         {isPro && (
           <View style={styles.proBadge}>
-            <Text style={styles.proBadgeText}>✨ PRO</Text>
+            <Text style={styles.proBadgeText}>PRO</Text>
           </View>
         )}
         <View style={styles.quickStatsGrid}>
           <View style={styles.quickStatItem}>
             <View style={[styles.quickStatIcon, { backgroundColor: colors.primary + '20' }]}>
-              <Ionicons name="car-sport" size={20} color={colors.primary} />
+              <Ionicons name="car-sport" size={18} color={colors.primary} />
             </View>
             <Text style={styles.quickStatNumber}>{vehiculos.length}</Text>
             <Text style={styles.quickStatLabel}>
@@ -1028,27 +1177,27 @@ const VehicleListScreen = ({ navigation, route }) => {
 
           <View style={styles.quickStatItem}>
             <View style={[styles.quickStatIcon, { backgroundColor: colors.warning + '20' }]}>
-              <Ionicons name="wallet" size={20} color={colors.warning} />
+              <Ionicons name="wallet" size={18} color={colors.warning} />
             </View>
             <Text style={styles.quickStatNumber}>
-              ${gastos.reduce((sum, g) => sum + (g.amount || 0), 0).toLocaleString()}
+              {currencySymbol}{gastos.reduce((sum, g) => sum + (g.amount || 0), 0).toLocaleString()}
             </Text>
-            <Text style={styles.quickStatLabel}>Total gastado</Text>
+            <Text style={styles.quickStatLabel}>{t('totalExpense')}</Text>
           </View>
 
           <View style={styles.quickStatItem}>
             <View style={[styles.quickStatIcon, { backgroundColor: colors.danger + '20' }]}>
-              <Ionicons name="build" size={20} color={colors.danger} />
+              <Ionicons name="build" size={18} color={colors.danger} />
             </View>
             <Text style={styles.quickStatNumber}>
               {mantenimientos.filter(m => m.status === 'pending').length}
             </Text>
-            <Text style={styles.quickStatLabel}>Pendientes</Text>
+            <Text style={styles.quickStatLabel}>{t('pending')}</Text>
           </View>
         </View>
       </Animated.View>
     </>
-  ), [isFree, showPromoBanner, isPro, styles, colors, vehiculos, gastos, mantenimientos, handleUpgrade, dismissPromoBanner]);
+  ), [isFree, showPromoBanner, isPro, styles, colors, vehiculos, gastos, mantenimientos, spacing, metricsPeriod, periodMetrics, currencySymbol, handleUpgrade, dismissPromoBanner]);
 
   if (vehiculos.length === 0) {
     return renderEmptyState();
@@ -1069,7 +1218,15 @@ const VehicleListScreen = ({ navigation, route }) => {
         refreshControl={
           <RefreshControl
             refreshing={refreshing || loading}
-            onRefresh={() => {}}
+            onRefresh={async () => {
+              setRefreshing(true);
+              await Promise.all([
+                loadVehiculos().catch(() => {}),
+                refreshGastos().catch(() => {}),
+                refreshMantenimientos().catch(() => {}),
+              ]);
+              setRefreshing(false);
+            }}
             colors={[colors.primary]}
             tintColor={colors.primary}
           />

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   View,
   Text,
@@ -33,6 +34,7 @@ import useVehiculos from '../../hooks/useVehiculos';
 import useSubscription from '../../hooks/useSubscription';
 import { gastosService } from '../../services/gastosApi';
 import { useTheme } from '../../hooks/useTheme';
+import { CURRENCIES } from '../../context/ThemeProvider';
 import { t } from '../../utils/i18n';
 import PremiumModal from '../../components/PremiumModal';
 
@@ -111,12 +113,12 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     alignItems: 'center'
   },
   headerGreeting: {
-    fontSize: 14,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: 4
+    marginBottom: 2,
   },
   headerTitle: {
-    fontSize: 32,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#fff'
   },
@@ -259,20 +261,20 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     ...shadows.md
   },
   categoryGradient: {
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
-    minWidth: 120
+    minWidth: 100,
   },
   categoryEmoji: {
-    fontSize: 28,
-    marginBottom: 8
+    fontSize: 22,
+    marginBottom: 4,
   },
   categoryName: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.textSecondary,
-    marginBottom: 4
+    marginBottom: 2,
   },
   categoryNameActive: {
     color: '#fff'
@@ -323,24 +325,24 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     padding: spacing.md
   },
   expenseIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 40,
+    height: 40,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md
+    marginRight: spacing.sm,
   },
   expenseIcon: {
-    fontSize: 24
+    fontSize: 20,
   },
   expenseDetails: {
     flex: 1
   },
   expenseTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4
+    marginBottom: 2,
   },
   expenseMetaRow: {
     flexDirection: 'row',
@@ -361,7 +363,7 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     gap: 8
   },
   expensePrice: {
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.text
   },
@@ -536,7 +538,7 @@ const ExpensesScreen = ({ navigation }) => {
   const { gastos, summary, loading, loadAllGastos, loadSummary, refreshData } = useGastos();
   const { vehiculos } = useVehiculos();
   const { canAddExpense, getExpenseLimit, isFree } = useSubscription();
-  const { colors, spacing, fontSize, borderRadius, shadows } = useTheme();
+  const { colors, spacing, fontSize, borderRadius, shadows, currency } = useTheme();
   const [selectedPeriod, setSelectedPeriod] = useState('month');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -547,6 +549,14 @@ const ExpensesScreen = ({ navigation }) => {
   useEffect(() => {
     loadInitialData();
   }, [selectedPeriod]);
+
+  // Refrescar datos al volver a la pantalla
+  useFocusEffect(
+    useCallback(() => {
+      loadAllGastos();
+      loadSummary(selectedPeriod);
+    }, [selectedPeriod])
+  );
 
   const loadInitialData = async () => {
     await loadAllGastos();
@@ -586,8 +596,13 @@ const ExpensesScreen = ({ navigation }) => {
     );
   };
 
+  const currencySymbol = useMemo(() => {
+    const cur = CURRENCIES.find(c => c.code === currency);
+    return cur ? cur.symbol : '$';
+  }, [currency]);
+
   const formatCurrency = (amount) => {
-    return `$${amount.toLocaleString('es-AR', { minimumFractionDigits: 0 })}`;
+    return `${currencySymbol}${amount.toLocaleString('es-AR', { minimumFractionDigits: 0 })}`;
   };
 
   const formatDate = (date) => {

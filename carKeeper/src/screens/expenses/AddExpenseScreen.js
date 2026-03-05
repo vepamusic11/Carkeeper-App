@@ -84,13 +84,13 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
   },
   selectorContainer: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl
+    marginBottom: spacing.md,
   },
   selectorLabel: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md
+    marginBottom: spacing.sm,
   },
   vehicleOptions: {
     flexDirection: 'row',
@@ -122,13 +122,13 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
   },
   section: {
     paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xl
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md
+    marginBottom: spacing.sm,
   },
   categoryGrid: {
     flexDirection: 'row',
@@ -138,11 +138,11 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
   categoryCard: {
     width: '31%',
     alignItems: 'center',
-    padding: spacing.md,
+    padding: spacing.sm,
     backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.border,
   },
   categoryCardSelected: {
     borderColor: colors.primary,
@@ -470,7 +470,7 @@ const AddExpenseScreen = ({ navigation, route }) => {
                   >
                     <Ionicons
                       name={category.icon}
-                      size={24}
+                      size={20}
                       color={selectedCategory === category.id ? colors.primary : colors.textSecondary}
                     />
                     <Text style={[

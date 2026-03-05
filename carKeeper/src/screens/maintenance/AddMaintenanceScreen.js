@@ -65,13 +65,13 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
     paddingBottom: spacing.xl
   },
   section: {
-    marginBottom: spacing.xl
+    marginBottom: spacing.md,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: spacing.md
+    marginBottom: spacing.sm,
   },
   vehicleSelector: {
     backgroundColor: colors.surface,
@@ -104,8 +104,8 @@ const createStyles = (colors, spacing, fontSize, borderRadius, shadows) => Style
   typeCard: {
     width: '48%',
     backgroundColor: colors.surface,
-    padding: spacing.md,
-    borderRadius: borderRadius.lg,
+    padding: spacing.sm,
+    borderRadius: 10,
     alignItems: 'center',
     ...shadows.sm
   },
